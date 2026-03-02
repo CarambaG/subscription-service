@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    container_name: subscriptions_db
+    environment:
+      POSTGRES_DB: subscriptions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - subscriptions-network
+
+  app:
+    build: .
+    container_name: subscriptions_app
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    networks:
+      - subscriptions-network
+
+volumes:
+  pgdata:
+
+networks:
+  subscriptions-network:
+    name: subscriptions_network

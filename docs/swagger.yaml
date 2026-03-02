@@ -1,0 +1,202 @@
+basePath: /
+definitions:
+  handler.SubscriptionRequest:
+    properties:
+      end_date:
+        example: 12-2025
+        type: string
+      price:
+        example: 100
+        type: integer
+      service_name:
+        example: Netflix
+        type: string
+      start_date:
+        example: 01-2025
+        type: string
+      user_id:
+        example: user-uuid-123
+        type: string
+    type: object
+  handler.SumRequest:
+    properties:
+      from:
+        example: 01-2025
+        type: string
+      service_name:
+        example: Netflix
+        type: string
+      to:
+        example: 12-2025
+        type: string
+      user_id:
+        example: user-uuid-123
+        type: string
+    type: object
+  handler.SumResponse:
+    properties:
+      total:
+        type: integer
+    type: object
+  model.Subscription:
+    properties:
+      created_at:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Это сервис подписок на Go.
+  title: Subscription API
+  version: "1.0"
+paths:
+  /subscriptions:
+    post:
+      consumes:
+      - application/json
+      description: Создает новую запись о подписке. Даты принимаются в формате "MM-YYYY".
+      parameters:
+      - description: Данные подписки
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Subscription'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Создание подписки
+      tags:
+      - subscriptions
+  /subscriptions/{id}:
+    delete:
+      description: Удаляет подписку по ID
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Удаление подписки
+      tags:
+      - subscriptions
+    get:
+      description: Возвращает подписку по её ID
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Subscription'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получение подписки
+      tags:
+      - subscriptions
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные существующей подписки
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новые данные
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Subscription'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Обновление подписки
+      tags:
+      - subscriptions
+  /subscriptions/sum:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Считает сумму подписок пользователя за период.
+        **Внимание**: Использует JSON body в GET запросе (может не работать в Swagger UI "Try it out", используйте curl).
+      parameters:
+      - description: Фильтры для расчета
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SumRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.SumResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Расчет суммы
+      tags:
+      - subscriptions
+swagger: "2.0"
