@@ -1,0 +1,10 @@
+app:
+  address: ":8080"
+  shutdown_timeout: 10s
+database:
+  url: "postgres://subscriptions:subscriptions@localhost:5432/subscriptions?sslmode=disable"
+  max_conns: 20
+  min_conns: 2
+  connect_timeout: 5s
+log:
+  level: info
