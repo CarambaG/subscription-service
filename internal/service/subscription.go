@@ -38,7 +38,7 @@ func (s *Service) Create(ctx context.Context, subscription domain.Subscription) 
 	subscription.ID = uuid.New()
 	normalize(&subscription)
 	if err := subscription.Validate(); err != nil {
-		return domain.Subscription{}, fmt.Errorf("validate subscription: %w", err)
+		return domain.Subscription{}, fmt.Errorf("%w: %v", domain.ErrInvalidInput, err)
 	}
 	if err := s.repository.Create(ctx, &subscription); err != nil {
 		s.logger.ErrorContext(ctx, "failed to create subscription", "error", err)
@@ -70,10 +70,10 @@ func (s *Service) List(ctx context.Context, filter domain.ListFilter) ([]domain.
 		filter.Limit = DefaultPageSize
 	}
 	if filter.Limit < 1 || filter.Limit > MaxPageSize {
-		return nil, 0, fmt.Errorf("limit must be between 1 and %d", MaxPageSize)
+		return nil, 0, fmt.Errorf("%w: limit must be between 1 and %d", domain.ErrInvalidInput, MaxPageSize)
 	}
 	if filter.Offset < 0 {
-		return nil, 0, errors.New("offset must not be negative")
+		return nil, 0, fmt.Errorf("%w: offset must not be negative", domain.ErrInvalidInput)
 	}
 	trimFilter(&filter.ServiceName)
 
@@ -90,7 +90,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, subscription domain.
 	subscription.ID = id
 	normalize(&subscription)
 	if err := subscription.Validate(); err != nil {
-		return domain.Subscription{}, fmt.Errorf("validate subscription: %w", err)
+		return domain.Subscription{}, fmt.Errorf("%w: %v", domain.ErrInvalidInput, err)
 	}
 
 	if err := s.repository.Update(ctx, &subscription); err != nil {
@@ -120,10 +120,10 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 
 func (s *Service) CalculateTotal(ctx context.Context, filter domain.TotalFilter) (int64, error) {
 	if filter.PeriodStart.IsZero() || filter.PeriodEnd.IsZero() {
-		return 0, errors.New("period_start and period_end are required")
+		return 0, fmt.Errorf("%w: period_start and period_end are required", domain.ErrInvalidInput)
 	}
 	if filter.PeriodEnd.Before(filter.PeriodStart) {
-		return 0, errors.New("period_end must not be earlier than period_start")
+		return 0, fmt.Errorf("%w: period_end must not be earlier than period_start", domain.ErrInvalidInput)
 	}
 	trimFilter(&filter.ServiceName)
 

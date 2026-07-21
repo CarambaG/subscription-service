@@ -11,7 +11,10 @@ import (
 
 const MonthLayout = "01-2006"
 
-var ErrNotFound = errors.New("subscription not found")
+var (
+	ErrInvalidInput = errors.New("invalid input")
+	ErrNotFound     = errors.New("subscription not found")
+)
 
 type Subscription struct {
 	ID          uuid.UUID
