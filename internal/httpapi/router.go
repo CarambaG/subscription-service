@@ -1,8 +1,11 @@
 package httpapi
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+)
 
-func NewRouter(handler *Handler) http.Handler {
+func NewRouter(handler *Handler, logger *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/subscriptions", handler.Create)
 	mux.HandleFunc("GET /api/v1/subscriptions", handler.List)
@@ -12,5 +15,5 @@ func NewRouter(handler *Handler) http.Handler {
 	mux.HandleFunc("DELETE /api/v1/subscriptions/{id}", handler.Delete)
 	mux.HandleFunc("GET /health/live", handler.Live)
 	mux.HandleFunc("GET /health/ready", handler.Ready)
-	return mux
+	return withRequestID(withAccessLog(logger, withRecovery(logger, mux)))
 }

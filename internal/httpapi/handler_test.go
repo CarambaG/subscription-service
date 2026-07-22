@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -51,9 +53,14 @@ type pingerStub struct{}
 
 func (pingerStub) Ping(context.Context) error { return nil }
 
+func testRouter(service SubscriptionService) http.Handler {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	return NewRouter(NewHandler(service, pingerStub{}), logger)
+}
+
 func TestCreateReturns201AndLocation(t *testing.T) {
 	service := &serviceStub{}
-	router := NewRouter(NewHandler(service, pingerStub{}))
+	router := testRouter(service)
 	body := `{
 		"service_name":"Yandex Plus",
 		"price":400,
@@ -78,7 +85,7 @@ func TestCreateReturns201AndLocation(t *testing.T) {
 
 func TestUpdateMissingSubscriptionReturns404(t *testing.T) {
 	service := &serviceStub{updateErr: domain.ErrNotFound}
-	router := NewRouter(NewHandler(service, pingerStub{}))
+	router := testRouter(service)
 	body := `{
 		"service_name":"Yandex Plus",
 		"price":400,
@@ -106,7 +113,7 @@ func TestUpdateMissingSubscriptionReturns404(t *testing.T) {
 }
 
 func TestInvalidPathIDReturns400(t *testing.T) {
-	router := NewRouter(NewHandler(&serviceStub{}, pingerStub{}))
+	router := testRouter(&serviceStub{})
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/subscriptions/not-a-uuid", nil)
 	recorder := httptest.NewRecorder()
 
@@ -126,7 +133,7 @@ func TestInvalidPathIDReturns400(t *testing.T) {
 
 func TestServiceErrorDoesNotLeakDetails(t *testing.T) {
 	service := &serviceStub{updateErr: errors.New("password=secret")}
-	router := NewRouter(NewHandler(service, pingerStub{}))
+	router := testRouter(service)
 	body := `{
 		"service_name":"Yandex Plus",
 		"price":400,
