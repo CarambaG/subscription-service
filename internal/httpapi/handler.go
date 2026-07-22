@@ -147,8 +147,8 @@ func (h *Handler) CalculateTotal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, totalResponse{
-		TotalCost:  total,
-		Currency:   "RUB",
+		TotalCost:   total,
+		Currency:    "RUB",
 		PeriodStart: domain.FormatMonth(filter.PeriodStart),
 		PeriodEnd:   domain.FormatMonth(filter.PeriodEnd),
 	})

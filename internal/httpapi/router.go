@@ -15,5 +15,10 @@ func NewRouter(handler *Handler, logger *slog.Logger) http.Handler {
 	mux.HandleFunc("DELETE /api/v1/subscriptions/{id}", handler.Delete)
 	mux.HandleFunc("GET /health/live", handler.Live)
 	mux.HandleFunc("GET /health/ready", handler.Ready)
+	mux.HandleFunc("GET /openapi.yaml", OpenAPI)
+	mux.HandleFunc("GET /swagger", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/swagger/", http.StatusPermanentRedirect)
+	})
+	mux.HandleFunc("GET /swagger/", SwaggerUI)
 	return withRequestID(withAccessLog(logger, withRecovery(logger, mux)))
 }

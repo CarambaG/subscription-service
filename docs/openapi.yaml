@@ -1,0 +1,320 @@
+openapi: 3.0.3
+info:
+  title: Subscription Aggregation Service
+  version: 1.0.0
+  description: REST API for CRUDL operations and subscription cost aggregation.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/subscriptions:
+    post:
+      summary: Create a subscription
+      operationId: createSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionInput'
+            example:
+              service_name: Yandex Plus
+              price: 400
+              user_id: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+              start_date: 07-2025
+      responses:
+        '201':
+          description: Subscription created
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    get:
+      summary: List subscriptions
+      operationId: listSubscriptions
+      parameters:
+        - $ref: '#/components/parameters/UserID'
+        - $ref: '#/components/parameters/ServiceName'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Paginated subscription list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/subscriptions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/SubscriptionID'
+    get:
+      summary: Get a subscription
+      operationId: getSubscription
+      responses:
+        '200':
+          description: Subscription
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Replace a subscription
+      operationId: updateSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionInput'
+      responses:
+        '200':
+          description: Updated subscription
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete a subscription
+      operationId: deleteSubscription
+      responses:
+        '204':
+          description: Subscription deleted
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/subscriptions/total:
+    get:
+      summary: Calculate subscription costs for an inclusive month range
+      operationId: calculateSubscriptionTotal
+      parameters:
+        - name: period_start
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Month'
+        - name: period_end
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Month'
+        - $ref: '#/components/parameters/UserID'
+        - $ref: '#/components/parameters/ServiceName'
+      responses:
+        '200':
+          description: Total price for every overlapping subscription month
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Total'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /health/live:
+    get:
+      summary: Liveness probe
+      operationId: live
+      responses:
+        '200':
+          description: Process is running
+  /health/ready:
+    get:
+      summary: Readiness probe
+      operationId: ready
+      responses:
+        '200':
+          description: Service and database are ready
+        '503':
+          description: Database is unavailable
+components:
+  parameters:
+    SubscriptionID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserID:
+      name: user_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    ServiceName:
+      name: service_name
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 255
+  responses:
+    BadRequest:
+      description: Invalid request or validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Subscription does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: subscription_not_found
+              message: subscription not found
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Month:
+      type: string
+      pattern: '^(0[1-9]|1[0-2])-\d{4}$'
+      example: 07-2025
+    SubscriptionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - service_name
+        - price
+        - user_id
+        - start_date
+      properties:
+        service_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        price:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Monthly price in whole rubles
+        user_id:
+          type: string
+          format: uuid
+        start_date:
+          $ref: '#/components/schemas/Month'
+        end_date:
+          allOf:
+            - $ref: '#/components/schemas/Month'
+          nullable: true
+    Subscription:
+      allOf:
+        - $ref: '#/components/schemas/SubscriptionInput'
+        - type: object
+          required:
+            - id
+            - created_at
+            - updated_at
+          properties:
+            id:
+              type: string
+              format: uuid
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    SubscriptionList:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscription'
+        pagination:
+          type: object
+          required:
+            - limit
+            - offset
+            - total
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+    Total:
+      type: object
+      required:
+        - total_cost
+        - currency
+        - period_start
+        - period_end
+      properties:
+        total_cost:
+          type: integer
+          format: int64
+          example: 2400
+        currency:
+          type: string
+          example: RUB
+        period_start:
+          $ref: '#/components/schemas/Month'
+        period_end:
+          $ref: '#/components/schemas/Month'
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: validation_error
+            message:
+              type: string
+              example: price must be greater than zero
